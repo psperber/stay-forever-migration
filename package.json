@@ -1,0 +1,66 @@
+{
+  "name": "stay-forever-migration",
+  "version": "1.0.0",
+  "description": "Migriert den Hörstatus von alten Stay Forever Podcast-Feeds zum neuen Stay Forever Platform-Feed",
+  "type": "module",
+  "main": "dist/cli.js",
+  "types": "dist/cli.d.ts",
+  "bin": {
+    "stay-forever-migration": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
+    "start": "node dist/cli.js",
+    "dev": "tsc && node dist/cli.js",
+    "dry-run": "tsc && node dist/cli.js --dry-run",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "format": "prettier --check src/**/*.ts",
+    "format:fix": "prettier --write src/**/*.ts",
+    "prepublishOnly": "pnpm build"
+  },
+  "keywords": [
+    "podcast",
+    "pocketcasts",
+    "migration",
+    "stay-forever",
+    "play-status"
+  ],
+  "author": "Philipp Sperber",
+  "license": "GPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/psperber/stay-forever-migration.git"
+  },
+  "bugs": {
+    "url": "https://github.com/psperber/stay-forever-migration/issues"
+  },
+  "homepage": "https://github.com/psperber/stay-forever-migration#readme",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@trivago/prettier-plugin-sort-imports": "^6.0.2",
+    "@types/node": "26.1.1",
+    "@typescript-eslint/parser": "^8.64.0",
+    "eslint": "10.7.0",
+    "eslint-config-prettier": "10.1.8",
+    "globals": "^17.7.0",
+    "prettier": "3.9.5",
+    "tsx": "4.23.0",
+    "typescript": "6.0.3",
+    "vitest": "4.1.10"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "8.5.2",
+    "commander": "15.0.0",
+    "undici": "8.7.0"
+  }
+}

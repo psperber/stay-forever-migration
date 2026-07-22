@@ -1,84 +1,74 @@
+import {
+  type EpisodeMatch,
+  type Matcher,
+  exactTitleMatcher,
+  normalizedTitleMatcher,
+  sfsSeasonMatcher,
+  zehnJahreMatcher,
+  dateAndDurationMatcher,
+} from "./matchers/index.js";
+import { STATIC_MATCHES, type StaticMatch } from "./matchers/static-table.js";
 import type { Episode } from "./types.js";
 
-export interface EpisodeMatch {
-  oldEpisode: Episode;
-  newEpisode: Episode;
-  source: string;
-  matchMethod: "exact-title" | "normalized-title" | "prefix" | "date-and-duration" | "unmatched";
-}
+export { normalizeTitle } from "./matchers/index.js";
+export type { EpisodeMatch } from "./matchers/index.js";
 
-export function normalizeTitle(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9äöüß]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+/** Ordered list of matching strategies – first match wins. */
+const matchers: Matcher[] = [
+  exactTitleMatcher,
+  normalizedTitleMatcher,
+  sfsSeasonMatcher,
+  zehnJahreMatcher,
+  dateAndDurationMatcher,
+];
 
-function sameDay(a: string, b: string): boolean {
-  return a.slice(0, 10) === b.slice(0, 10);
-}
+function findStaticMatch(oldTitle: string, newEpisodes: Episode[], usedNewUuids: Set<string>): Episode | undefined {
+  // Find matching key (prefix match to handle truncated API titles)
+  let target: StaticMatch | undefined;
+  for (const [key, value] of Object.entries(STATIC_MATCHES)) {
+    if (oldTitle === key || oldTitle.startsWith(key)) {
+      target = value;
+      break;
+    }
+  }
+  if (!target) return undefined;
 
-function durationSimilar(a: number, b: number): boolean {
-  return Math.abs(a - b) <= 60;
+  if ("title" in target) {
+    return newEpisodes.find((ep) => !usedNewUuids.has(ep.uuid) && ep.title === target.title);
+  }
+  return newEpisodes.find(
+    (ep) => !usedNewUuids.has(ep.uuid) && ep.season === target.season && ep.number === target.number,
+  );
 }
 
 export function matchEpisodes(oldEpisodes: Episode[], newEpisodes: Episode[], source: string): EpisodeMatch[] {
-  const newByTitle = new Map(newEpisodes.map((ep) => [ep.title, ep]));
-  const newByNormalized = new Map(newEpisodes.map((ep) => [normalizeTitle(ep.title), ep]));
   const usedNewUuids = new Set<string>();
-
   const matches: EpisodeMatch[] = [];
-  const unmatchedOld: Episode[] = [];
 
   for (const oldEp of oldEpisodes) {
-    // 1. Exact title match
-    const exactMatch = newByTitle.get(oldEp.title);
-    if (exactMatch && !usedNewUuids.has(exactMatch.uuid)) {
-      usedNewUuids.add(exactMatch.uuid);
-      matches.push({ oldEpisode: oldEp, newEpisode: exactMatch, source, matchMethod: "exact-title" });
+    // 1. Check static table first
+    const staticResult = findStaticMatch(oldEp.title, newEpisodes, usedNewUuids);
+    if (staticResult) {
+      usedNewUuids.add(staticResult.uuid);
+      matches.push({ oldEpisode: oldEp, newEpisode: staticResult, source, matchMethod: "static" });
       continue;
     }
 
-    // 2. Normalized title match
-    const normalizedMatch = newByNormalized.get(normalizeTitle(oldEp.title));
-    if (normalizedMatch && !usedNewUuids.has(normalizedMatch.uuid)) {
-      usedNewUuids.add(normalizedMatch.uuid);
-      matches.push({ oldEpisode: oldEp, newEpisode: normalizedMatch, source, matchMethod: "normalized-title" });
-      continue;
+    // 2. Try matchers in order
+    let matched = false;
+    for (const matcher of matchers) {
+      const result = matcher.match(oldEp, newEpisodes, usedNewUuids);
+      if (result) {
+        usedNewUuids.add(result.uuid);
+        matches.push({ oldEpisode: oldEp, newEpisode: result, source, matchMethod: matcher.name });
+        matched = true;
+        break;
+      }
     }
 
-    // 3. Prefix match ("Stay Forever - " + old title)
-    const prefixMatch = newByNormalized.get(normalizeTitle(`Stay Forever - ${oldEp.title}`));
-    if (prefixMatch && !usedNewUuids.has(prefixMatch.uuid)) {
-      usedNewUuids.add(prefixMatch.uuid);
-      matches.push({ oldEpisode: oldEp, newEpisode: prefixMatch, source, matchMethod: "prefix" });
-      continue;
+    if (!matched) {
+      matches.push({ oldEpisode: oldEp, newEpisode: undefined!, source, matchMethod: "unmatched" });
     }
-
-    unmatchedOld.push(oldEp);
-  }
-
-  // 4. Date + Duration match
-  const stillUnmatched: Episode[] = [];
-  for (const oldEp of unmatchedOld) {
-    const candidate = newEpisodes.find(
-      (ep) =>
-        !usedNewUuids.has(ep.uuid) &&
-        sameDay(ep.published, oldEp.published) &&
-        durationSimilar(ep.duration, oldEp.duration),
-    );
-    if (candidate) {
-      usedNewUuids.add(candidate.uuid);
-      matches.push({ oldEpisode: oldEp, newEpisode: candidate, source, matchMethod: "date-and-duration" });
-    } else {
-      stillUnmatched.push(oldEp);
-    }
-  }
-
-  // 5. Remaining are unmatched
-  for (const oldEp of stillUnmatched) {
-    matches.push({ oldEpisode: oldEp, newEpisode: undefined!, source, matchMethod: "unmatched" });
   }
 
   return matches;

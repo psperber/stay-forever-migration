@@ -43,11 +43,12 @@ describe("matchEpisodes", () => {
     expect(result[0].matchMethod).toBe("normalized-title");
   });
 
-  it("matches by prefix (Stay Forever - )", () => {
-    const old = [makeEpisode("Retrogames Folge 5")];
-    const newEps = [makeEpisode("Stay Forever - Retrogames Folge 5")];
+  it("matches by static table", () => {
+    const old = [makeEpisode("Wissenslücken #0")];
+    const newEps = [makeEpisode("Wissenslücken")];
     const result = matchEpisodes(old, newEps, "test");
-    expect(result[0].matchMethod).toBe("prefix");
+    expect(result[0].matchMethod).toBe("static");
+    expect(result[0].newEpisode.title).toBe("Wissenslücken");
   });
 
   it("matches by date and duration", () => {

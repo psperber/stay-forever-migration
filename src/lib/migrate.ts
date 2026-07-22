@@ -1,10 +1,10 @@
+import { confirm } from "@inquirer/prompts";
 import type { PodcastClient } from "./apps/podcast-client.js";
 import { exportMatchesCsv } from "./csv-export.js";
 import { matchEpisodes, type EpisodeMatch } from "./match.js";
 import { syncPlayStatus, syncArchiveStatus } from "./sync.js";
 import { PlayingStatus } from "./types.js";
 import type { Episode, EpisodeStatus, Podcast } from "./types.js";
-import { confirm } from "@inquirer/prompts";
 
 export interface MigrateOptions {
   client: PodcastClient;

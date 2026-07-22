@@ -41,21 +41,21 @@ export async function syncArchiveStatus(
   podcastUuid: string,
   dryRun: boolean,
 ): Promise<void> {
-  const archivedUnplayed = matches.filter((m) => {
+  const toArchive = matches.filter((m) => {
     if (m.matchMethod === "unmatched" || !m.newEpisode) return false;
     const status = getStatus(m);
-    return status !== undefined && status.playingStatus === PlayingStatus.NotPlayed && status.isDeleted;
+    return status !== undefined && status.isDeleted;
   });
 
-  console.log(`Archiviere ${archivedUnplayed.length} ungehörte+archivierte Episoden...`);
+  console.log(`Archiviere ${toArchive.length} Episoden (isDeleted=true)...`);
 
   if (!dryRun) {
     const BATCH_SIZE = 50;
-    for (let i = 0; i < archivedUnplayed.length; i += BATCH_SIZE) {
-      const batch = archivedUnplayed.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < toArchive.length; i += BATCH_SIZE) {
+      const batch = toArchive.slice(i, i + BATCH_SIZE);
       await client.archiveEpisodes(batch.map((m) => ({ uuid: m.newEpisode.uuid, podcast: podcastUuid })));
-      console.log(`  ...${Math.min(i + BATCH_SIZE, archivedUnplayed.length)}/${archivedUnplayed.length}`);
+      console.log(`  ...${Math.min(i + BATCH_SIZE, toArchive.length)}/${toArchive.length}`);
     }
   }
-  console.log(`  ✅ ${archivedUnplayed.length} Episoden archiviert`);
+  console.log(`  ✅ ${toArchive.length} Episoden archiviert`);
 }

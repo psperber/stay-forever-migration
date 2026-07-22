@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { syncPlayStatus, syncArchiveStatus } from "./sync.js";
+import type { PodcastClient } from "./apps/podcast-client.js";
 import type { EpisodeMatch } from "./match.js";
+import { syncPlayStatus, syncArchiveStatus } from "./sync.js";
 import { PlayingStatus } from "./types.js";
 import type { Episode, EpisodeStatus } from "./types.js";
-import type { PodcastClient } from "./apps/podcast-client.js";
 
 function makeEpisode(title: string, uuid?: string): Episode {
   return {
@@ -137,7 +137,7 @@ describe("syncArchiveStatus", () => {
     expect(client.archiveEpisodes).toHaveBeenCalledWith([{ uuid: match.newEpisode.uuid, podcast: "pod-uuid" }]);
   });
 
-  it("does not archive played episodes", async () => {
+  it("archives played+deleted episodes too", async () => {
     const match = makeMatch("exact-title");
     const status: EpisodeStatus = {
       uuid: match.oldEpisode.uuid,
@@ -150,7 +150,7 @@ describe("syncArchiveStatus", () => {
 
     await syncArchiveStatus([match], () => status, client, "pod-uuid", false);
 
-    expect(client.archiveEpisodes).not.toHaveBeenCalled();
+    expect(client.archiveEpisodes).toHaveBeenCalledWith([{ uuid: match.newEpisode.uuid, podcast: "pod-uuid" }]);
   });
 
   it("does not archive in dry-run mode", async () => {

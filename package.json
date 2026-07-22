@@ -1,6 +1,6 @@
 {
   "name": "stay-forever-migration",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Migriert den Hörstatus von alten Stay Forever Podcast-Feeds zum neuen Stay Forever Platform-Feed",
   "type": "module",
   "main": "dist/cli.js",

@@ -1,15 +1,14 @@
+import { writeFileSync } from "node:fs";
 import { describe, it, expect, vi } from "vitest";
+import { beforeEach } from "vitest";
 import { exportMatchesCsv } from "./csv-export.js";
 import type { EpisodeMatch } from "./match.js";
 import { PlayingStatus } from "./types.js";
 import type { Episode, EpisodeStatus } from "./types.js";
-import { writeFileSync } from "node:fs";
 
 vi.mock("node:fs", () => ({
   writeFileSync: vi.fn(),
 }));
-
-import { beforeEach } from "vitest";
 
 beforeEach(() => {
   vi.clearAllMocks();
